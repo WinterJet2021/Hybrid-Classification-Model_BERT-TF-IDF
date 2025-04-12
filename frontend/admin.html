@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+</head>
+<body>
+  <h2>Recent Interest Predictions</h2>
+  <ul id="log"></ul>
+
+  <script>
+    // For demo, you can extend this to fetch logs from backend/database
+    let dummyLogs = [
+      { comment: "I love painting and exploring nature", interests: ["Arts", "Travel"] },
+      { comment: "Attending AI conferences is my thing", interests: ["Technology", "Education"] },
+    ];
+
+    const logElement = document.getElementById("log");
+    dummyLogs.forEach(entry => {
+      const item = document.createElement("li");
+      item.innerText = `"${entry.comment}" → [${entry.interests.join(', ')}]`;
+      logElement.appendChild(item);
+    });
+  </script>
+</body>
+</html>

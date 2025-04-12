@@ -1,0 +1,31 @@
+{
+  "aggregated": {
+    "alpha=0.3,threshold=0.3": {
+      "micro_f1": {
+        "mean": 0.7997724687144482,
+        "std": 0.0
+      },
+      "macro_f1": {
+        "mean": 0.8066716771219777,
+        "std": 0.0
+      },
+      "hamming": {
+        "mean": 0.09997159897756319,
+        "std": 0.0
+      }
+    }
+  },
+  "best_micro_f1": {
+    "params": "alpha=0.3,threshold=0.3",
+    "score": 0.7997724687144482
+  },
+  "best_hamming": {
+    "params": "alpha=0.3,threshold=0.3",
+    "score": 0.09997159897756319
+  },
+  "completion_status": {
+    "completed_combinations": 1,
+    "total_combinations": 84,
+    "percentage_complete": 1.1904761904761905
+  }
+}
