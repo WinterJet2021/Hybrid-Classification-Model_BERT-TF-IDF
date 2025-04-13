@@ -1,12 +1,3 @@
----
-title: NomadSync: Hybrid Interest Classifier API
-emoji: 🧭
-colorFrom: emerald
-colorTo: blue
-sdk: docker
-pinned: true
----
-
 # 🧭 NomadSync: Hybrid Interest Classifier API
 
 This is the official **interest classification microservice** for [NomadSync](https://nomadsync.ai) — a digital platform designed to help **digital nomads** connect with events, people, and opportunities in Thailand.
