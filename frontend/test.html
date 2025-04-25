@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interest Classifier Demo</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        textarea { width: 100%; height: 150px; }
+        .params { display: flex; gap: 20px; }
+        .param-group { flex: 1; }
+        .results { margin-top: 20px; }
+        .interest { margin: 5px 0; padding: 8px; border-radius: 3px; }
+        .chart { margin-top: 20px; height: 300px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hybrid Interest Classifier Demo</h1>
+        
+        <div class="form-group">
+            <label>Enter text to classify:</label>
+            <textarea id="inputText">I'm a software developer who enjoys hiking on weekends and playing guitar in my band.</textarea>
+        </div>
+        
+        <div class="params">
+            <div class="param-group">
+                <label>Alpha: <span id="alphaValue">0.6</span></label>
+                <input type="range" id="alpha" min="0" max="1" step="0.1" value="0.6" />
+                <p>Higher = More TF-IDF weight</p>
+            </div>
+            <div class="param-group">
+                <label>Threshold: <span id="thresholdValue">0.5</span></label>
+                <input type="range" id="threshold" min="0" max="1" step="0.05" value="0.5" />
+                <p>Higher = Fewer interests detected</p>
+            </div>
+        </div>
+        
+        <button id="classify">Classify Text</button>
+        
+        <div class="results" id="results">
+            <!-- Results will appear here -->
+        </div>
+        
+        <div class="chart" id="chart">
+            <!-- Chart will appear here -->
+        </div>
+    </div>
+    
+    <script>
+        // Update slider values
+        document.getElementById('alpha').addEventListener('input', function() {
+            document.getElementById('alphaValue').textContent = this.value;
+        });
+        document.getElementById('threshold').addEventListener('input', function() {
+            document.getElementById('thresholdValue').textContent = this.value;
+        });
+        
+        // Classify button click handler
+        document.getElementById('classify').addEventListener('click', function() {
+            const text = document.getElementById('inputText').value;
+            const alpha = document.getElementById('alpha').value;
+            const threshold = document.getElementById('threshold').value;
+            
+            // Show loading state
+            document.getElementById('results').innerHTML = '<p>Analyzing...</p>';
+            
+            // Call your API
+            fetch('http://localhost:8000/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: text,
+                    alpha: parseFloat(alpha),
+                    threshold: parseFloat(threshold),
+                    return_scores: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display results
+                displayResults(data);
+            })
+            .catch(error => {
+                document.getElementById('results').innerHTML = 
+                    `<p>Error: ${error.message}</p>`;
+            });
+        });
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            // Clear previous results
+            resultsDiv.innerHTML = '';
+            
+            // Add identified labels
+            const labelsDiv = document.createElement('div');
+            labelsDiv.innerHTML = `<h3>Detected Interests:</h3>`;
+            
+            if (data.labels && data.labels.length) {
+                data.labels.forEach(label => {
+                    const interestDiv = document.createElement('div');
+                    interestDiv.className = 'interest';
+                    interestDiv.style.backgroundColor = '#e6f7ff';
+                    interestDiv.textContent = label;
+                    labelsDiv.appendChild(interestDiv);
+                });
+            } else {
+                labelsDiv.innerHTML += '<p>No interests detected above threshold</p>';
+            }
+            
+            resultsDiv.appendChild(labelsDiv);
+            
+            // Add scores
+            if (data.scores) {
+                const scoresDiv = document.createElement('div');
+                scoresDiv.innerHTML = `<h3>Combined Scores:</h3>`;
+                
+                // Create score bars
+                Object.entries(data.scores)
+                    .sort((a, b) => b[1] - a[1])
+                    .forEach(([label, score]) => {
+                        const scoreDiv = document.createElement('div');
+                        scoreDiv.style.margin = '5px 0';
+                        
+                        const bar = document.createElement('div');
+                        bar.style.backgroundColor = score >= data.model_info.threshold ? '#52c41a' : '#d9d9d9';
+                        bar.style.height = '20px';
+                        bar.style.width = `${score * 100}%`;
+                        bar.style.display = 'inline-block';
+                        
+                        const text = document.createElement('span');
+                        text.style.marginLeft = '10px';
+                        text.textContent = `${label}: ${score.toFixed(3)}`;
+                        
+                        scoreDiv.appendChild(bar);
+                        scoreDiv.appendChild(text);
+                        scoresDiv.appendChild(scoreDiv);
+                    });
+                
+                resultsDiv.appendChild(scoresDiv);
+                
+                // Add model details
+                if (data.model_info) {
+                    const infoDiv = document.createElement('div');
+                    infoDiv.innerHTML = `
+                        <h3>Model Info:</h3>
+                        <p>Alpha: ${data.model_info.alpha} (TF-IDF: ${data.model_info.alpha}, BERT: ${1-data.model_info.alpha})</p>
+                        <p>Threshold: ${data.model_info.threshold}</p>
+                        <p>Using BERT: ${data.model_info.using_bert}</p>
+                    `;
+                    
+                    if (data.timing) {
+                        infoDiv.innerHTML += `
+                            <p>Processing Time: ${data.timing.total.toFixed(3)}s</p>
+                        `;
+                    }
+                    
+                    resultsDiv.appendChild(infoDiv);
+                }
+                
+                // Add individual model scores
+                if (data.tfidf_scores && data.bert_scores) {
+                    const modelsDiv = document.createElement('div');
+                    modelsDiv.innerHTML = `<h3>Individual Model Scores:</h3>`;
+                    
+                    // TF-IDF
+                    modelsDiv.innerHTML += `<h4>TF-IDF Top Scores:</h4>`;
+                    Object.entries(data.tfidf_scores)
+                        .forEach(([label, score]) => {
+                            modelsDiv.innerHTML += `<p>${label}: ${score.toFixed(3)}</p>`;
+                        });
+                    
+                    // BERT
+                    modelsDiv.innerHTML += `<h4>BERT Top Scores:</h4>`;
+                    Object.entries(data.bert_scores)
+                        .forEach(([label, score]) => {
+                            modelsDiv.innerHTML += `<p>${label}: ${score.toFixed(3)}</p>`;
+                        });
+                    
+                    resultsDiv.appendChild(modelsDiv);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
